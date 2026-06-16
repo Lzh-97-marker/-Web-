@@ -260,6 +260,11 @@ async function generateSummary() {
  * 内容来源：输出区域已显示的文本，不重新请求API。
  */
 function exportWord(outputId, fileNameInputId, defaultName) {
+    if (typeof docx === 'undefined') {
+        showToast('Word导出组件加载失败，请刷新页面后重试');
+        return;
+    }
+
     const outputEl = document.getElementById(outputId);
     const rawText = (outputEl.textContent || '').trim();
     if (!rawText || (rawText.includes('点击') && rawText.includes('开始'))) {
