@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI工作提效助手（辅导员版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .card-shadow { box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06); }
+        .card-shadow:hover { box-shadow: 0 4px 12px 0 rgba(0,0,0,0.10), 0 2px 4px -2px rgba(0,0,0,0.08); }
+        .output-area { min-height: 180px; max-height: 420px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+        .spinner { border: 2px solid #e5e7eb; border-top: 2px solid #3b82f6; border-radius: 50%; width: 18px; height: 18px; animation: spin 0.6s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .copy-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-semibold text-gray-900">AI工作提效助手</h1>
+                    <p class="text-xs text-gray-500">辅导员版 v1.0</p>
+                </div>
+            </div>
+            <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100" title="API设置">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="hidden bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+            <div class="flex flex-wrap items-end gap-4">
+                <div class="flex-1 min-w-[260px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+                </div>
+                <div class="w-40">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
+                    <select id="modelSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition bg-white">
+                        <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+                        <option value="claude-opus-4-7">Claude Opus 4.7</option>
+                    </select>
+                </div>
+                <button onclick="saveSettings()" class="bg-primary-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">保存设置</button>
+                <button onclick="clearSettings()" class="text-gray-500 hover:text-gray-700 text-sm py-2 px-2 transition-colors">清除</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">API Key 仅保存在浏览器本地，不会上传至任何服务器。</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="copy-toast hidden bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm shadow-lg transition-all duration-300"></div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+            <!-- ===== 模块1：谈心记录生成器 ===== -->
+            <div class="bg-white rounded-xl card-shadow border border-gray-100 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 bg-primary-50/50">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <h2 class="font-semibold text-gray-900">谈心记录生成</h2>
+                    </div>
+                </div>
+                <div class="p-5 space-y-3.5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">学生基本情况</label>
+                        <textarea id="talkStudent" rows="2" placeholder="例：张三，男，2024级计算机科学与技术专业1班，性格内向，近期成绩下滑..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">谈话问题描述</label>
+                        <textarea id="talkProblem" rows="2" placeholder="例：连续两周缺勤3次，与室友关系紧张，辅导员走访发现其情绪低落..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">处理要点</label>
+                        <textarea id="talkHandle" rows="2" placeholder="例：了解缺勤原因，协调室友关系，联系心理健康中心评估，与家长沟通..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <button onclick="generateTalkRecord()" id="talkBtn" class="w-full bg-primary-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        生成谈心记录
+                    </button>
+                    <div class="relative">
+                        <div id="talkOutput" class="output-area bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed">
+                            <span class="text-gray-400">点击"生成谈心记录"开始...</span>
+                        </div>
+                        <button onclick="copyOutput('talkOutput')" id="talkCopyBtn" class="hidden absolute top-2 right-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-500 hover:text-primary-600 hover:border-primary-300 transition-colors shadow-sm">
+                            复制
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 模块2：新闻稿生成器 ===== -->
+            <div class="bg-white rounded-xl card-shadow border border-gray-100 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 bg-primary-50/50">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                            </svg>
+                        </div>
+                        <h2 class="font-semibold text-gray-900">新闻稿生成</h2>
+                    </div>
+                </div>
+                <div class="p-5 space-y-3.5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">活动名称</label>
+                        <input id="newsTitle" type="text" placeholder="例：第十届校园文化艺术节开幕式" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">时间地点</label>
+                        <input id="newsLocation" type="text" placeholder="例：2026年6月15日 校体育馆" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">活动过程要点</label>
+                        <textarea id="newsContent" rows="3" placeholder="例：1.校领导致辞；2.各学院代表队入场；3.文艺表演（合唱、舞蹈、器乐）；4.颁奖环节；5.全体合影..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <button onclick="generateNews()" id="newsBtn" class="w-full bg-primary-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        生成新闻稿
+                    </button>
+                    <div class="relative">
+                        <div id="newsOutput" class="output-area bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed">
+                            <span class="text-gray-400">点击"生成新闻稿"开始...</span>
+                        </div>
+                        <button onclick="copyOutput('newsOutput')" id="newsCopyBtn" class="hidden absolute top-2 right-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-500 hover:text-primary-600 hover:border-primary-300 transition-colors shadow-sm">
+                            复制
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 模块3：工作总结生成器 ===== -->
+            <div class="bg-white rounded-xl card-shadow border border-gray-100 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 bg-primary-50/50">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <h2 class="font-semibold text-gray-900">工作总结生成</h2>
+                    </div>
+                </div>
+                <div class="p-5 space-y-3.5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">工作列表</label>
+                        <textarea id="summaryWork" rows="2" placeholder="例：1.完成2026年春学期学生返校工作；2.组织3次主题班会；3.走访学生宿舍12次..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">工作成果</label>
+                        <textarea id="summaryResult" rows="2" placeholder="例：学生到课率提升至96%，2名学生获省级竞赛奖项，无安全责任事故..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">存在问题</label>
+                        <textarea id="summaryProblem" rows="2" placeholder="例：个别学生学习动力不足，心理问题学生比例上升，家校沟通需要加强..."
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition resize-none"></textarea>
+                    </div>
+                    <button onclick="generateSummary()" id="summaryBtn" class="w-full bg-primary-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        生成工作总结
+                    </button>
+                    <div class="relative">
+                        <div id="summaryOutput" class="output-area bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed">
+                            <span class="text-gray-400">点击"生成工作总结"开始...</span>
+                        </div>
+                        <button onclick="copyOutput('summaryOutput')" id="summaryCopyBtn" class="hidden absolute top-2 right-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-500 hover:text-primary-600 hover:border-primary-300 transition-colors shadow-sm">
+                            复制
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="border-t border-gray-200 bg-white mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 text-center text-xs text-gray-400">
+            AI工作提效助手（辅导员版）v1.0 — 所有数据仅在浏览器本地处理
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
