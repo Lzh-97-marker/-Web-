@@ -117,6 +117,13 @@
                             复制
                         </button>
                     </div>
+                    <div class="flex gap-2">
+                        <input id="talkFileName" type="text" placeholder="请输入导出文件名" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+                        <button onclick="exportWord('talkOutput', 'talkFileName', '学生谈心谈话记录')" id="talkExportBtn" class="hidden whitespace-nowrap bg-white border border-primary-300 text-primary-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            导出Word
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -158,6 +165,13 @@
                         </div>
                         <button onclick="copyOutput('newsOutput')" id="newsCopyBtn" class="hidden absolute top-2 right-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-500 hover:text-primary-600 hover:border-primary-300 transition-colors shadow-sm">
                             复制
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="newsFileName" type="text" placeholder="请输入导出文件名" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+                        <button onclick="exportWord('newsOutput', 'newsFileName', '校园活动新闻稿')" id="newsExportBtn" class="hidden whitespace-nowrap bg-white border border-primary-300 text-primary-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            导出Word
                         </button>
                     </div>
                 </div>
@@ -205,6 +219,13 @@
                             复制
                         </button>
                     </div>
+                    <div class="flex gap-2">
+                        <input id="summaryFileName" type="text" placeholder="请输入导出文件名" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+                        <button onclick="exportWord('summaryOutput', 'summaryFileName', '学期工作总结')" id="summaryExportBtn" class="hidden whitespace-nowrap bg-white border border-primary-300 text-primary-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            导出Word
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -217,6 +238,7 @@
         </div>
     </footer>
 
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
