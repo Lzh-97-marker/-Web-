@@ -1,10 +1,4 @@
 {
-    "functions": {
-        "api/generate.js": {
-            "runtime": "@vercel/node@4.x",
-            "maxDuration": 30
-        }
-    },
     "headers": [
         {
             "source": "/(.*)",
