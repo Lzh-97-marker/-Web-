@@ -254,91 +254,97 @@ async function generateSummary() {
     }
 }
 
-// ---------- Word 导出 ----------
+// ---------- Word 导出（零外部依赖，HTML/MSO 兼容格式）----------
 /**
- * 将当前模块已生成的AI内容导出为符合高校公文规范的 .docx 文件。
- * 内容来源：输出区域已显示的文本，不重新请求API。
+ * 将输出区域的纯文本按行解析，套用公文排版样式，
+ * 生成 Word 可直接打开的 .doc 文件（HTML+MSO 格式）。
  */
 function exportWord(outputId, fileNameInputId, defaultName) {
-    if (typeof docx === 'undefined') {
-        showToast('Word导出组件加载失败，请刷新页面后重试');
-        return;
-    }
+    var outputEl = document.getElementById(outputId);
 
-    const outputEl = document.getElementById(outputId);
-    const rawText = (outputEl.textContent || '').trim();
-    if (!rawText || (rawText.includes('点击') && rawText.includes('开始'))) {
+    // 从 innerHTML 提取纯文本并保留换行（<br> → \n）
+    var rawText = (outputEl.innerHTML || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .trim();
+
+    if (!rawText || (rawText.indexOf('点击') !== -1 && rawText.indexOf('开始') !== -1)) {
         showToast('请先生成内容后再导出');
         return;
     }
 
-    const fileNameInput = document.getElementById(fileNameInputId);
-    const fileName = fileNameInput.value.trim() || defaultName;
+    var fileNameInput = document.getElementById(fileNameInputId);
+    var fileName = (fileNameInput.value.trim() || defaultName) + '.doc';
 
-    // 依赖 docx CDN（index.html 已同步加载）
-    var D = docx.Document;
-    var Pkr = docx.Packer;
-    var P = docx.Paragraph;
-    var TR = docx.TextRun;
-    var Align = docx.AlignmentType;
-    var LR = docx.LineRule;
-
-    // 固定行距 28.8pt = 576 twips
-    var lineSpacing = { line: 576, lineRule: LR.EXACT };
-
-    // 段落样式工厂
-    function titlePara(text) {
-        return new P({ alignment: Align.CENTER, spacing: lineSpacing,
-            children: [new TR({ text: text, font: '方正小标宋简体', size: 44, bold: true })] });
-    }
-    function h1Para(text) {
-        return new P({ alignment: Align.JUSTIFIED, spacing: lineSpacing,
-            children: [new TR({ text: text, font: '黑体', size: 32, bold: true })] });
-    }
-    function h2Para(text) {
-        return new P({ alignment: Align.JUSTIFIED, spacing: lineSpacing,
-            children: [new TR({ text: text, font: '楷体', size: 32, bold: true })] });
-    }
-    function bodyPara(text) {
-        return new P({ alignment: Align.JUSTIFIED, spacing: lineSpacing,
-            indent: { firstLine: 640 },
-            children: [new TR({ text: text, font: '仿宋_GB2312', size: 32 })] });
-    }
-
+    // 按行解析，分类
     var lines = rawText.split('\n');
-    var paragraphs = [];
-    var isFirst = true;
     var h1Re = /^[一二三四五六七八九十]、/;
     var h2Re = /^（[一二三四五六七八九十]）/;
+    var htmlParts = [];
+    var isFirst = true;
 
     for (var i = 0; i < lines.length; i++) {
         var t = lines[i].trim();
         if (!t) continue;
-        if (isFirst)               { paragraphs.push(titlePara(t)); isFirst = false; }
-        else if (h1Re.test(t))     { paragraphs.push(h1Para(t)); }
-        else if (h2Re.test(t))     { paragraphs.push(h2Para(t)); }
-        else                       { paragraphs.push(bodyPara(t)); }
+
+        if (isFirst) {
+            // 文档标题
+            htmlParts.push('<p class="title">' + escXml(t) + '</p>');
+            isFirst = false;
+        } else if (h1Re.test(t)) {
+            htmlParts.push('<p class="h1">' + escXml(t) + '</p>');
+        } else if (h2Re.test(t)) {
+            htmlParts.push('<p class="h2">' + escXml(t) + '</p>');
+        } else {
+            htmlParts.push('<p class="body">' + escXml(t) + '</p>');
+        }
     }
 
-    if (paragraphs.length === 0) { showToast('没有可导出的内容'); return; }
+    if (htmlParts.length === 0) { showToast('没有可导出的内容'); return; }
 
-    var doc = new D({
-        sections: [{ properties: { page: { margin: { top: 680, bottom: 680, left: 900, right: 900 } } }, children: paragraphs }]
-    });
+    // 构建 Word 兼容 HTML（MSO 命名空间）
+    var html = [
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office"',
+        '      xmlns:w="urn:schemas-microsoft-com:office:word"',
+        '      xmlns="http://www.w3.org/TR/REC-html40">',
+        '<head><meta charset="utf-8">',
+        '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View>',
+        '<w:DoNotHyphenateCaps/><w:PunctuationKerning/>',
+        '<w:DrawingGridHorizontalSpacing>1.0pt</w:DrawingGridHorizontalSpacing>',
+        '<w:DrawingGridVerticalSpacing>1.0pt</w:DrawingGridVerticalSpacing>',
+        '</w:WordDocument></xml><![endif]-->',
+        '<style>',
+        '@page { size: 210mm 297mm; margin-top: 25.4mm; margin-bottom: 25.4mm;',
+        '        margin-left: 31.8mm; margin-right: 31.8mm; mso-header-margin: 15mm;',
+        '        mso-footer-margin: 15mm; mso-page-orientation: portrait; }',
+        'body { font-family: 仿宋_GB2312; font-size: 16pt; }',
+        'p { margin: 0; padding: 0; line-height: 28.8pt;',
+        '    mso-line-height-rule: exactly; }',
+        'p.title { font-family: 方正小标宋简体; font-size: 22pt;',
+        '          font-weight: bold; text-align: center; }',
+        'p.h1 { font-family: 黑体; font-size: 16pt; font-weight: bold; }',
+        'p.h2 { font-family: 楷体; font-size: 16pt; font-weight: bold; }',
+        'p.body { text-indent: 2em; }',
+        '</style></head><body>',
+        htmlParts.join('\n'),
+        '</body></html>'
+    ].join('\n');
 
-    Pkr.toBlob(doc).then(function(blob) {
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = fileName + '.docx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast('Word 文档已下载');
-    }).catch(function(err) {
-        showToast('导出失败：' + err.message);
-    });
+    var blob = new Blob(['﻿' + html], { type: 'application/msword;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Word 文档已下载');
+}
+
+/** XML/HTML 转义 */
+function escXml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ---------- XSS 防护 ----------
